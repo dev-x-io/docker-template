@@ -1,0 +1,30 @@
+import os
+
+DOCKER_IMAGE = "{{ docker_image }}"
+PREFIX = DOCKER_IMAGE.replace("docker-", "")
+
+COMMANDS = [
+    {% for cmd in commands %}
+    "{{ cmd }}",
+    {% endfor %}
+]
+
+def function_exists(function_name):
+    """Check if a given function exists in the shell (for Linux)."""
+    return os.system(f"type {function_name} > /dev/null 2>&1") == 0
+
+def add_container_aliases():
+    for cmd in COMMANDS:
+        function_name = PREFIX + "_" + cmd
+        if function_exists(function_name):
+            function_name = "docker_" + cmd
+        
+        alias_function = f"""
+def {function_name}():
+    os.system(f'docker run -it --rm {DOCKER_IMAGE} {cmd}')
+"""
+
+        print(alias_function)
+
+if __name__ == "__main__":
+    add_container_aliases()
