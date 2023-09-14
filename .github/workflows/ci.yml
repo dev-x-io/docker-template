@@ -34,14 +34,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Generate repository name
-        run: echo "image_name=$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')" >> $GITHUB_ENV
-
       # Get the name of this repository without the "docker-" prefix.
-      #- name: Get repository name
-        #id: repo_name
-        #run: echo "::set-output name=image_name::$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')"
-        #run: echo "image_name=$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')" >> $GITHUB_ENV
+      - name: Get repository name
+        id: repo_name
+        run: echo "::set-output name=image_name::$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')"
 
       # Set up Docker for more efficient builds using "Buildx".
       - name: Set up Docker
