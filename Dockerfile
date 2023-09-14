@@ -1,6 +1,8 @@
 # Gebruik het nieuwste officiële Alpine-beeld als basis
 FROM alpine:latest
 
+ENV APP_VERSION=v0.0.0
+
 # Installeer Python, pip, upgrade pip en installeer Python-bibliotheken in één RUN commando
 RUN apk add --no-cache python3 py3-pip && \
     pip3 install --upgrade pip && \

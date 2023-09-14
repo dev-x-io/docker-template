@@ -9,6 +9,9 @@ from modules.banner import Banner
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# Set the app version from an environment variable or use a default value
+APP_VERSION = "v0.0.0"  # Default version if not set in environment variable
+
 # Let's imagine we have a folder called 'modules' with individual Python files for each module.
 # Each module will contain functions that we want to support in app.
 
@@ -29,12 +32,12 @@ def discover_modules():
 
 def main():
     # Toon altijd de banner bij het starten van het script
-    banner = Banner()
+    banner = Banner(APP_VERSION)
     banner.display()
 
     module_instances = {}
 
-    parser = argparse.ArgumentParser(description=colored('g(ood-)host-shell: Your friendly & dynamic shell!', 'green'))
+    parser = argparse.ArgumentParser(description=colored('docker shell: Made user-friendly, dynamic and bonus; Ephemeral!', 'green'))
     
     subparsers = parser.add_subparsers(dest='module', help='Available modules in app')
 

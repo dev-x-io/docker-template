@@ -14,16 +14,16 @@ class Banner:
     and any pertinent details of the environment. It's not just about the information, but the presentation!
     """
     
-    def __init__(self):
+    def __init__(self,app_version="v0.0.0"):
         """Initialize the environment details for the banner."""
         # Fetch the version from an environment variable or use a default value
-        self.version = os.getenv('VERSION', 'v0.0.1')
+        self.version = os.environ.get("APP_VERSION", app_version)
         # Fetch the name of the current directory
         self.basename = os.path.basename(os.getcwd())
         # Craft the main banner
-        self.banner = pyfiglet.figlet_format(f'Dev-X-io helper shell {self.version}', font='digital')
+        self.banner = pyfiglet.figlet_format(f'Dev-X-io docker shell {self.version}', font='digital')
         # Set the info color based on the presence of the Helper-X.app file
-        self.info_color = "green" if os.path.isfile("/helpers/helper-x.app") else "red"
+        self.info_color = "green" if os.path.isfile("/helpers/dev-x.io") else "red"
 
 
     def add_arguments(self, subparsers, name, doc):
