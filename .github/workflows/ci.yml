@@ -35,10 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Generate repository name
-        run: echo $(echo ${{ github.repository }} | sed -e 's#.*/docker-##') > image_name.txt
-
-      - name: Set image_name variable
-        run: echo "image_name=$(cat image_name.txt)" >> $GITHUB_ENV
+        run: echo "image_name=$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')" >> $GITHUB_ENV
 
       # Get the name of this repository without the "docker-" prefix.
       #- name: Get repository name
