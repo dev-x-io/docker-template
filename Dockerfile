@@ -18,4 +18,4 @@ WORKDIR /app
 
 # Stel het Python-script in als het commando dat wordt uitgevoerd wanneer de container wordt gestart
 ENTRYPOINT ["python3", "main.py"]
-# CMD ["python3", "main.py", "boilerplate", "init", "helper-x", "--docker-image", "docker-template"]
+CMD ["-h"]
