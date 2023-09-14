@@ -32,7 +32,7 @@ jobs:
     steps:
       # Get the code from the current repository.
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Get the name of this repository without the "docker-" prefix.
       - name: Get repository name
@@ -41,11 +41,11 @@ jobs:
 
       # Set up Docker for more efficient builds using "Buildx".
       - name: Set up Docker
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       # Log in to DockerHub (a website where Docker images are stored) with a secret username and password.
       - name: Log in to DockerHub
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v3 
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -53,7 +53,7 @@ jobs:
       # Determine the name and tags for our Docker image.
       - name: Set up Docker Meta
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v5
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.repo_name.outputs.image_name }}
           tags: |
@@ -64,7 +64,7 @@ jobs:
 
       # Build a new Docker image with our code and push it to DockerHub.
       - name: Build and push Docker image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true # Always push, regardless of the event
