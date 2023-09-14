@@ -38,7 +38,7 @@ jobs:
       - name: Get repository name
         id: repo_name
         run: echo "::set-output name=image_name::$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')"
-        run: echo "image_name=$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')" >> $GITHUB_ENV
+        #run: echo "image_name=$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')" >> $GITHUB_ENV
 
       # Set up Docker for more efficient builds using "Buildx".
       - name: Set up Docker
