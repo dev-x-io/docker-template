@@ -57,9 +57,10 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.repo_name.outputs.image_name }}
           tags: |
+            type=semver,pattern={{version}},value=latest
             type=semver,pattern={{version}}
             type=ref,event=branch,value=${{ github.ref_slug }}
-            type=sha,format=short,prefix=sha-
+            type=sha,format=short
 
       # Build a new Docker image with our code and push it to DockerHub.
       - name: Build and push Docker image
