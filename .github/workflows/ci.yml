@@ -37,7 +37,7 @@ jobs:
       # Get the name of this repository without the "docker-" prefix.
       - name: Get repository name
         id: repo_name
-        run: echo "::set-output name=image_name::$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')"
+        run: echo "image_name=$(echo ${{ github.repository }} | sed -e 's#.*/docker-##')" >> $GITHUB_ENV
 
       # Set up Docker for more efficient builds using "Buildx".
       - name: Set up Docker
@@ -57,9 +57,8 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ steps.repo_name.outputs.image_name }}
           tags: |
-            type=semver,pattern={{version}},value=latest
             type=semver,pattern={{version}}
-            type=ref,event=branch,value=${{ github.ref_slug }}
+            type=ref,event=branch
             type=sha,format=short
 
       # Build a new Docker image with our code and push it to DockerHub.
