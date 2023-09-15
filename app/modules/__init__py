@@ -1,0 +1,29 @@
+# In de __init__.py van de modules-directory
+
+import importlib
+import os
+
+# Lijst met moduleklassen om te importeren
+module_classes = ['Boilerplate', 'Banner']  # Voeg de namen van je moduleklassen toe
+
+# Map van moduleklassen naar hun Python-bestanden
+module_files = {
+    'Boilerplate': 'boilerplate.boilerplate',
+    'Banner': 'banner.banner'
+}
+
+# Importeer en instantieer de moduleklassen
+module_instances = {}
+for module_name, module_path in module_files.items():
+    module_class = getattr(importlib.import_module(module_path), module_name)
+    module_instances[module_name] = module_class()
+
+# Genereer 'add_arguments' voor elke moduleklasse
+for module_name, module_instance in module_instances.items():
+    module_path = os.path.join('modules', module_name.lower())
+    module_doc = module_instance.__doc__ or f"Help for the {module_name} module."
+
+    def add_arguments(subparsers):
+        return module_instance.add_arguments(subparsers, module_name.lower(), module_doc)
+
+    setattr(module_instance, 'add_arguments', add_arguments)

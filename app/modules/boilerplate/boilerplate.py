@@ -1,8 +1,9 @@
 import os
 import jinja2
+import argparse
 from termcolor import colored
 from abc import ABC, abstractmethod  # Toegevoegd voor abstracte klasse
-from common.tools import AbstractModule, Common
+from modules.common import AbstractModule, Common
 
 # Constants
 MODULES_PATH = "modules"  # Path to the modules directory
@@ -39,35 +40,44 @@ class Boilerplate(AbstractModule):
     def ghost(self):
         """Conjures a ghost shell script."""
         pass
-    
+    def add_arguments(self, subparsers, subcommand, help_text, subparsers_variable):
+        parser = subparsers.add_parser(subcommand, help=help_text)
+        # Voeg hier argumenten toe aan de parser voor dit specifieke module.
+        parser.add_argument('--module-argument', help='An argument for this module')
 
-    def add_arguments(self, subparsers, name, doc):
-        """Add arguments that this module supports."""
-        module_parser = subparsers.add_parser(name, help=doc.strip())
-        command_subparsers = module_parser.add_subparsers(dest='command', help=f'{name} commands')
+    # def add_arguments(self, subparsers, name, doc, subparsers_variable=None):
+    #     """Add arguments that this module supports."""
+    #     module_parser = subparsers.add_parser(name, help=doc.strip())
+    #     command_subparsers = module_parser.add_subparsers(dest='command', help=f'{name} commands')
 
-        # Voeg de Common klasse toe aan boilerplate
-        common_instance = Common()  # Maak een instantie van de Common klasse
-        common_instance.add_arguments(module_parser, name, doc)  # Roep de add_arguments methode van Common aan
+    #     # Maak een parent_parser voor het module-commando
+    #     parent_parser = argparse.ArgumentParser(add_help=False)
 
-        # Voeg andere argumenten voor boilerplate toe
-        # ...
+    #     # Voeg argumenten toe aan parent_parser indien nodig
+    #     parent_parser.add_argument('--parent-argument', help='An argument for the parent parser')
 
-        init_parser = command_subparsers.add_parser("init", help="Initialize components.")
-        init_subparsers = init_parser.add_subparsers(dest='init_type', help='init subcommands')
+    #     # Voeg de Common klasse toe aan boilerplate
+    #     common_instance = Common()  # Maak een instantie van de Common klasse
+    #     common_instance.add_arguments(module_parser, name, doc, parent_parser)
 
-        subcommands = [
-            {
-                "name": "module",
-                "help": "Initialize a new module.",
-                "args": [{"name": "--name", "help": "Name for the new module.", "required": True}]
-            },
-            {
-                "name": "ghost",
-                "help": "Generate a ghost shell script.",
-                "args": []
-            }
-        ]
+    #     # Voeg andere argumenten voor boilerplate toe
+    #     # ...
+
+    #     init_parser = command_subparsers.add_parser("init", help="Initialize components.")
+    #     init_subparsers = init_parser.add_subparsers(dest='init_type', help='init subcommands')
+
+    #     subcommands = [
+    #         {
+    #             "name": "module",
+    #             "help": "Initialize a new module.",
+    #             "args": [{"name": "--name", "help": "Name for the new module.", "required": True}]
+    #         },
+    #         {
+    #             "name": "ghost",
+    #             "help": "Generate a ghost shell script.",
+    #             "args": []
+    #         }
+    #     ]
 
         for subcommand in subcommands:
             parser = init_subparsers.add_parser(subcommand["name"], help=subcommand["help"])
@@ -82,6 +92,7 @@ class Boilerplate(AbstractModule):
         # Add logs command directly to the module command level
         logs_parser = command_subparsers.add_parser("logs", help="Display logs.")
         logs_parser.set_defaults(func=self.show_logs)
+
         
     def register_observer(self, observer):
         """Add an observer to the list."""
@@ -144,7 +155,7 @@ class Boilerplate(AbstractModule):
         self.logs.append(log_message)
         self.notify_observers(log_message)
 
-        if args.command == 'init':
+        if hasattr(args, 'command') and args.command == 'init':
             if args.init_type == 'module':
                 self.init_new_module(args.name)
             elif args.init_type == 'ghost':
