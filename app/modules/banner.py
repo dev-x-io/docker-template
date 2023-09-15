@@ -26,7 +26,7 @@ class Banner(AbstractModule):
         """Initialize the environment details for the banner."""
         self.version = os.environ.get("APP_VERSION", app_version)
         self.basename = os.path.basename(os.getcwd())
-        self.banner = pyfiglet.figlet_format(f'Dev-X Input/Output {self.version}', font='digital')
+        self.info = pyfiglet.figlet_format(f'Dev-X Input/Output {self.version}', font='digital')
         self.info_color = "green" if os.path.isfile("/helpers/dev-x.io") else "red"
 
         # Metadata
@@ -201,16 +201,16 @@ class Banner(AbstractModule):
 
     def display(self, module_instances=None):
         """Render the majestic banner for all to behold."""
-        print(colored(self.banner, self.info_color))
+        print(colored(self.info, self.info_color))
 
         self.display_system_info()
 
         print(colored(Banner.__doc__, "green"))
 
-        if not os.path.isfile("/helpers/.devxio"):
-            print(colored("Uhoh.. Dev-X-io file absent.\nBrace yourself for the powdered milk experience!\n", 'white'))
-        else:
-            print(colored("Yes; Dev-X-io file detected!\nHold onto your pants, probably lose your socks.\nThis app is so universal..\nthings are about to get unreal!\n", 'green'))
+        # if not os.path.isfile("/helpers/.devxio"):
+        #     print(colored("Uhoh.. Dev-X-io file absent.\nBrace yourself for the powdered milk experience!\n", 'white'))
+        # else:
+        #     print(colored("Yes; Dev-X-io file detected!\nHold onto your pants, probably lose your socks.\nThis app is so universal..\nthings are about to get unreal!\n", 'green'))
 
         # Display module information if provided
         if module_instances:
