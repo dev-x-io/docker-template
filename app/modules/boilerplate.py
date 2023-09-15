@@ -146,14 +146,13 @@ class Boilerplate(AbstractModule):
 
         if args.command == 'init':
             if args.init_type == 'module':
-                self.init_new_module(args.name)
+                self.module()
             elif args.init_type == 'ghost':
-                self.init_ghost_shell()
+                self.ghost()
         elif args.command == 'logs':
             self.show_logs()
         else:
             self.print_help()
-
 
     def get_logs(self):
         """Retrieve all logs."""
