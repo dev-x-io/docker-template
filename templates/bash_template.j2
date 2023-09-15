@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Generated with Dev-X-io Boilerplate
+
+# Read the source containers from .devxio file line by line
+while IFS= read -r docker_image
+do
+    PREFIX=$(echo $docker_image | sed 's/docker-//; s/:.*//')
+
+    function devxio() {
+        local command="$1"
+        shift  # Shift the arguments to get subcommands and options
+        local subcommand="$1"
+        shift  # Shift again to get any further options
+
+        case "$command" in
+        {% for cmd, subcmds in commands.items() %}
+        "{{ cmd }}")
+            case "$subcommand" in
+            {% for subcmd in subcmds %}
+            "{{ subcmd }}")
+                docker run -it --rm -v ./helpers/:/devxio -v ./.runtime/modules/:/modules -v ./.runtime/docs/:/docs $docker_image {{ cmd }} {{ subcmd }} "$@"
+                ;;
+            {% endfor %}
+            *)
+                echo "Unknown subcommand: $subcommand for command {{ cmd }}"
+                ;;
+            esac
+            ;;
+        {% endfor %}
+        *)
+            echo "Unknown command: $command"
+            ;;
+        esac
+    }
+done < .devxio
+
+alias container="docker run -it --rm -v ./helpers/:/devxio -v /workspaces/docker-template/.runtime/modules/:/modules -v /workspaces/docker-template/.runtime/docs/:/docs docker-template:latest"
+
+alias devxio=devxio
+
+echo "Available commands:"
+{% for cmd, subcmds in commands.items() %}
+echo "devxio {{ cmd }} [{{ ' '.join(subcmds) }}]"
+{% endfor %}

@@ -1,0 +1,34 @@
+# Variables
+$DockerImages = @()  # Array to store Docker image sources
+$Aliases = @()  # Array to store generated aliases
+
+# Read the .devxio file line by line to get Docker image sources
+Get-Content .\.devxio | ForEach-Object {
+    $DockerImages += $_
+}
+
+# For each Docker image, run it with --report to get commands and subcommands, then generate aliases
+foreach ($DockerImage in $DockerImages) {
+    $Prefix = $DockerImage -replace 'docker-', ''
+    $Report = docker run --rm $DockerImage --report | ConvertFrom-Json
+
+    # Extract commands from the report and generate aliases
+    $Commands = $Report.boilerplate.commands.PSObject.Properties.Name
+    foreach ($cmd in $Commands) {
+        $alias_name = "${Prefix}_$cmd"
+        $Aliases += $alias_name
+        Set-Alias -Name $alias_name -Value "docker run -it --rm $DockerImage $cmd"
+
+        # Extract subcommands for each command and generate aliases
+        $Subcommands = $Report.boilerplate.subcommands.$cmd.subcommands.PSObject.Properties.Name
+        foreach ($subcmd in $Subcommands) {
+            $sub_alias_name = "${Prefix}_${cmd}_${subcmd}"
+            $Aliases += $sub_alias_name
+            Set-Alias -Name $sub_alias_name -Value "docker run -it --rm $DockerImage $cmd $subcmd"
+        }
+    }
+}
+
+Write-Output "Generated aliases for the following Docker images: $($DockerImages -join ', ')"
+Write-Output "Available commands:"
+$Aliases | ForEach-Object { Write-Output $_ }

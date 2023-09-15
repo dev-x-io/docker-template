@@ -4,5 +4,9 @@
 # Ignore .vscode
 **/.vscode
 
-# Ignore .helper-x
-**/.helper-x
+# Ignore .devxio
+**/*.devxio
+
+# Ignore .log files
+**/*.log
+
