@@ -20,6 +20,11 @@ EXCLUDE_MODULES = ['tools', 'observer']
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(DYNAMIC_MODULES_PATH)
 
+def debug_print(message, color="green"):
+    """Prints the message only if --debug flag is provided."""
+    if 'ARGS' in globals() and ARGS.debug:
+        print_colored(message, color="yellow")
+
 # ------------------ Utility Functions ------------------
 
 def print_colored(text, color='green'):
@@ -32,8 +37,7 @@ def discover_modules(path,debug=False):
         file[:-3] for file in os.listdir(path)
         if file.endswith('.py') and file != '__init__.py'
     ]
-    if not debug or (debug and ARGS.debug):
-        print_colored(f"Discovered modules in {path}: {modules}", color="yellow")
+    debug_print(f"Discovered modules in {path}: {modules}", color="yellow")
     return modules
 
 def add_modules_to_parser(subparsers, module_path, abstract_module, is_static=True, module_prefix="",debug=False):
@@ -43,8 +47,7 @@ def add_modules_to_parser(subparsers, module_path, abstract_module, is_static=Tr
     for module_name in discover_modules(module_path):
         if module_name in EXCLUDE_MODULES:
             continue
-        if not debug or (debug and ARGS.debug):
-            print_colored(f"Attempting to import module: {module_name}", color="yellow")
+        debug_print(f"Attempting to import module: {module_name}", color="yellow")
         try:
             if is_static:
                 module = importlib.import_module(f"{STATIC_MODULES_PATH}.{module_name}")
@@ -53,8 +56,7 @@ def add_modules_to_parser(subparsers, module_path, abstract_module, is_static=Tr
 
             for name, cls in inspect.getmembers(module, inspect.isclass):
                 if cls.__module__ == module.__name__ and issubclass(cls, abstract_module) and cls != abstract_module:
-                    if not debug or (debug and ARGS.debug):
-                        print_colored(f"Instantiating class {name} of module {module_name}...")
+                    debug_print(f"Instantiating class {name} of module {module_name}...")
                     instance = cls()
                     module_instances[name.lower()] = instance
                     if hasattr(instance, 'add_arguments'):
@@ -85,18 +87,11 @@ def main():
     # ------------------ Discover Modules ----------------------
     common_subparser = parser.add_subparsers(dest='common_module', help='Available common modules in app')
 
-    # Voeg een nieuwe subparser toe voor het geval er geen subcommando is opgegeven
-    no_subcommand_parser = common_subparser.add_parser('', help=argparse.SUPPRESS)
-
-    # Verwijder de oorspronkelijke subparser door de help-tekst op te geven als argparse.SUPPRESS
-    common_subparser.choices.clear()
-
-    # ------------------ Parse Arguments -----------------------
-    global ARGS
-    ARGS = parser.parse_args()
-
     # ------------------ Add Modules ---------------------------
     add_modules_to_parser(common_subparser, STATIC_MODULES_PATH, AbstractModule, is_static=True)
+
+    global ARGS
+    ARGS = parser.parse_args()
 
     # ------------------ Handle Report Argument ------------------
     if ARGS.report:
@@ -110,21 +105,26 @@ def main():
         print(json.dumps(report, indent=4))
         return
 
-    # ------------------ Display Help if No Arguments ------------------
-    if len(sys.argv) == 1:
-        parser.print_help()
-        return
-    print("##################################")
-    print(ARGS.common_module)
-    print("##################################")
     # ------------------ Execute the Appropriate Module ------------------
-    if ARGS.common_module == None or (len(sys.argv) == 0 and not ARGS.debug):
-        common_command = ARGS.common_module
-        print_colored(f"Module instances before execution: {module_instances}")
-        module_instances[common_command].execute(ARGS)
+    # if ARGS.common_module == None or (len(sys.argv) == 0 and not ARGS.debug):
+    #     common_command = ARGS.common_module
+    #     debug_print(f"Module instances before execution: {module_instances}")
+    #     if common_command in module_instances:
+    #         module_instances[common_command].execute(ARGS)
+    #     else:
+    #         print("No valid command provided.")
+    # else:
+    #     print_colored(f"Unknown common module: {ARGS.common_module}")
+    #     parser.print_help()
+    if ARGS.common_module in module_instances:
+        # Print help for the specific module if no subcommand is provided
+        if hasattr(ARGS, 'command') and not ARGS.command:
+            parser.parse_args([ARGS.common_module, ARGS.subcommand, '-h'])
+        else:
+            parser.parse_args([ARGS.common_module, '-h'])
     else:
         print_colored(f"Unknown common module: {ARGS.common_module}")
-        parser.print_help()
+
 
 if __name__ == "__main__":
     main()
