@@ -3,17 +3,19 @@ FROM alpine:latest
 
 ENV APP_VERSION=v0.0.0
 
+
 # Installeer Python, pip, upgrade pip en installeer Python-bibliotheken in één RUN commando
 RUN apk add --no-cache python3 py3-pip && \
     pip3 install --upgrade pip && \
-    pip3 install pyfiglet termcolor jinja2 && \
-    mkdir /helpers
+    pip3 install pyfiglet termcolor jinja2
+
+VOLUME [ "/devxio", "/modules", "/templates", "/docs" ]
 
 # Kopieer het Python-script (banner.py) naar de container
 COPY ./app/ /app
 
-# Stel de permissies van de werkdirectory in
-RUN chmod -R 755 /app/modules
+# Kopieer de jinja templates naar de container
+COPY ./templates/ /templates
 
 # Stel een werkdirectory in
 WORKDIR /app

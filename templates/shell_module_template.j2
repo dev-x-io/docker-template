@@ -37,6 +37,26 @@ class {{ class_name or 'UnnamedModule' }}:
         for observer in self._observers:
             observer.update(message)
 
+    def get_commands_with_docs(self):
+        """Return a dictionary of commands and their docstrings."""
+        commands_with_docs = {}
+        for command in self.module_commands:
+            func = getattr(self, command, None)
+            if func and callable(func):
+                commands_with_docs[command] = func.__doc__.strip()
+        return commands_with_docs
+
+    def get_subcommands_with_docs(self):
+        """Return a dictionary of subcommands and their docstrings."""
+        subcommands_with_docs = {}
+        for command, subcommands in self.module_subcommands.items():
+            subcommands_with_docs[command] = {}
+            for subcommand in subcommands:
+                func = getattr(self, subcommand, None)
+                if func and callable(func):
+                    subcommands_with_docs[command][subcommand] = func.__doc__.strip()
+        return subcommands_with_docs
+        
     def add_arguments(self, subparsers, name, doc):
         """Add arguments that this module supports."""
         module_parser = subparsers.add_parser(name, help=doc.strip())

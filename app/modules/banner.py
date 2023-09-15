@@ -1,11 +1,30 @@
 import platform
 import socket
 import multiprocessing
-import pyfiglet
 import os
+import pyfiglet
+import json
 from termcolor import colored
+from abc import ABC, abstractmethod  # Toegevoegd voor abstracte klasse
 
-class Banner:
+
+class AbstractModule(ABC):
+    """
+    Abstract Module to define the structure for all modules.
+    """
+
+    @abstractmethod
+    def get_command_docs(self):
+        """Retrieve the docstrings for commands."""
+        pass
+
+    @abstractmethod
+    def get_subcommand_docs(self):
+        """Retrieve the docstrings for subcommands."""
+        pass
+
+
+class Banner(AbstractModule):
     """
     Welcome aboard the Dev-X-io Express!
 
@@ -18,7 +37,6 @@ class Banner:
     All aboard the Dev-X-io Express! 🚀
     """
 
-    
     def __init__(self, app_version="v0.0.0"):
         """Initialize the environment details for the banner."""
         self.version = os.environ.get("APP_VERSION", app_version)
@@ -32,8 +50,41 @@ class Banner:
         self.module_version = "0.1.0"
         self.module_author = "Dev-X-io"
         self.module_license = "MIT"
-        self.module_commands = ["show", "list"]
+        self.module_commands = ["show", "list", "banner"]
         self.module_subcommands = {}
+
+    def get_command_docs(self):
+        """Retrieve the docstrings for commands."""
+        commands_dict = {}
+        for command in self.module_commands:
+            command_method = getattr(self, command, None)
+            if command_method and command_method.__doc__:
+                commands_dict[command] = command_method.__doc__.strip()
+        return commands_dict
+
+    def get_subcommand_docs(self):
+        """Retrieve the docstrings for subcommands."""
+        # Since Banner class does not have subcommands, we return an empty dictionary
+        return {}
+
+    @staticmethod
+    def generate_report(module_instances):
+        """Generate a JSON report of all available modules, commands, subcommands, metadata, and docstrings."""
+        report = {}
+        for module_name, instance in module_instances.items():
+            module_data = {
+                'metadata': {
+                    'description': instance.module_description if hasattr(instance, 'module_description') else None,
+                    'version': instance.module_version if hasattr(instance, 'module_version') else None,
+                    'author': instance.module_author if hasattr(instance, 'module_author') else None,
+                    'license': instance.module_license if hasattr(instance, 'module_license') else None,
+                    'doc': instance.__doc__.strip() if instance.__doc__ else None,
+                },
+                'commands': instance.get_command_docs() if hasattr(instance, 'get_command_docs') else {},
+                'subcommands': instance.get_subcommand_docs() if hasattr(instance, 'get_subcommand_docs') else {}
+            }
+            report[module_name] = module_data
+        return json.dumps(report, indent=4)
 
     def add_arguments(self, subparsers, name, doc):
         """Add arguments for the Banner module."""
@@ -77,11 +128,28 @@ class Banner:
         print(colored("Python Version:", self.info_color), platform.python_version())
         print(colored("Number of CPUs:", self.info_color), multiprocessing.cpu_count())
         print(colored("Modules path:", self.info_color), os.path.dirname(os.path.abspath(__file__)))
-        
-    def display(self):
+
+    def display_module_info(self, module_instances):
+        """Display detailed module commands and their docstrings."""
+        print(colored("\nAvailable Modules and Commands:\n", 'yellow'))
+        for module_name, instance in module_instances.items():
+            print(colored(f"{module_name}:", "cyan"))
+            if hasattr(instance, 'get_commands_with_docs'):
+                commands_with_docs = instance.get_commands_with_docs()
+                for command, doc in commands_with_docs.items():
+                    print(f"  {command} - {doc}")
+
+            if hasattr(instance, 'get_subcommands_with_docs'):
+                subcommands_with_docs = instance.get_subcommands_with_docs()
+                for command, subcommands in subcommands_with_docs.items():
+                    for subcommand, subdoc in subcommands.items():
+                        print(f"  {command} {subcommand} - {subdoc}")
+            print()
+
+    def display(self, module_instances=None):
         """Render the majestic banner for all to behold."""
         print(colored(self.banner, self.info_color))
-        
+
         self.display_system_info()
 
         print(colored(Banner.__doc__, "green"))
@@ -89,4 +157,11 @@ class Banner:
         if not os.path.isfile("/helpers/.devxio"):
             print(colored("Uhoh.. Dev-X-io file absent.\nBrace yourself for the powdered milk experience!\n", 'white'))
         else:
-            print(colored("Yes; Dev-X-io file detected!\nHold onto your pants, probably lose you're socks.\nThis app is so universal..\nthings are about to get unreal!\n", 'green'))
+            print(colored("Yes; Dev-X-io file detected!\nHold onto your pants, probably lose your socks.\nThis app is so universal..\nthings are about to get unreal!\n", 'green'))
+
+        # Display module information if provided
+        if module_instances:
+            self.display_module_info(module_instances)
+
+
+# Voeg eventuele extra functionaliteit of methoden hieronder toe

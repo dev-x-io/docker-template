@@ -1,12 +1,16 @@
 # Variabelen
 DOCKER_IMAGE_NAME = $(shell basename $(CURDIR))
 DOCKER_TAG = latest
+RUNTIME_PATH = $(PWD)/.runtime
 
 # Targets
 
 ## build: Bouwt de Docker container.
 build:
 	@docker build -f Dockerfile -t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG) .
+	@echo "Docker image $(DOCKER_IMAGE_NAME):$(DOCKER_TAG) is built."
+	echo
+	@echo "Available alias for this container: 'çontainer'"
 
 ## run: Draait de Docker container.
 run:

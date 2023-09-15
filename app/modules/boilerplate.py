@@ -1,10 +1,27 @@
 import os
 import jinja2
 from termcolor import colored
+from abc import ABC, abstractmethod
 
 MODULES_PATH = "modules"  # Path to the modules directory
-TEMPLATES_PATH = "templates"  # Path to the templates directory
-HELPERS_PATH = "/helpers"  # Path to the directory for helper scripts outside /app
+TEMPLATES_PATH = "/templates"  # Path to the templates directory
+BOILERPLATE_PATH = "/modules"
+RUNTIME_PATH = "/devxio"  # Path for newly generated modules
+
+class AbstractModule(ABC):
+    """
+    Abstract Module to define the structure for all modules.
+    """
+
+    @abstractmethod
+    def get_command_docs(self):
+        """Retrieve the docstrings for commands."""
+        pass
+
+    @abstractmethod
+    def get_subcommand_docs(self):
+        """Retrieve the docstrings for subcommands."""
+        pass
 
 class Boilerplate:
     """
@@ -22,10 +39,10 @@ class Boilerplate:
     """
 
     
-    def __init__(self):
+    def __init__(self, app_version="v0.1.0"):
         self.module_name = "boilerplate"
         self.module_description = "A foundation for all future modules."
-        self.module_version = "0.1.0"
+        self.module_version = os.environ.get("APP_VERSION", app_version)
         self.module_author = "Dev-X-io"
         self.module_license = "MIT"
         self.module_path = os.path.dirname(os.path.realpath(__file__))
@@ -35,6 +52,28 @@ class Boilerplate:
         }
         self._observers = []
         self.logs = []
+
+    def init(self):
+        """
+        Ignites the Boilerplate's core.
+
+        The starting beacon, calling forth the Boilerplate's might. Ready to set the stage for future endeavors.
+        """
+        pass
+
+    def module(self):
+        """
+        Crafts a new module from the template.
+
+        This spell weaves the essence of Dev-X-io, giving birth to a new module, primed for innovation.
+        """
+
+    def ghost(self):
+        """
+        Conjures a ghost shell script.
+
+        With a dash of magic and a sprinkle of Dev-X-io spirit, this incantation manifests a ghost shell script, ready to haunt the digital realm.
+        """
 
     def register_observer(self, observer):
         """Add an observer to the list."""
@@ -49,6 +88,45 @@ class Boilerplate:
         """Notify all observers of a change."""
         for observer in self._observers:
             observer.update(message)
+
+    # def discover_commands(self):
+    #     """Discover all available command modules in the MODULES_PATH."""
+    #     commands = []
+    #     for file in os.listdir(MODULES_PATH):
+    #         if file.endswith('.py') and file != '__init__.py':
+    #             commands.append(file[:-3])
+    #     return commands
+    
+    def discover_commands(self):
+        commands = {}
+        for command in self.module_commands:
+            subcommands = getattr(self, f"{command}_subcommands", [])
+            commands[command] = [f'"{subcmd}"' for subcmd in subcommands]
+        return commands
+
+
+    def get_command_docs(self):
+        """Retrieve the docstrings for commands."""
+        commands_dict = {}
+        for command in self.module_commands:
+            command_method = getattr(self, command, None)
+            if command_method and command_method.__doc__:
+                commands_dict[command] = command_method.__doc__.strip()
+        return commands_dict
+
+    def get_subcommand_docs(self):
+        """Retrieve the docstrings for subcommands."""
+        subcommands_dict = {}
+        for command, subcommands in self.module_subcommands.items():
+            subcommands_dict[command] = {
+                "description": getattr(self, command).__doc__.strip() if getattr(self, command) and getattr(self, command).__doc__ else "",
+                "subcommands": {}
+            }
+            for subcommand in subcommands:
+                subcommand_method = getattr(self, subcommand, None)
+                if subcommand_method and subcommand_method.__doc__:
+                    subcommands_dict[command]["subcommands"][subcommand] = subcommand_method.__doc__.strip()
+        return subcommands_dict
 
     def add_arguments(self, subparsers, name, doc):
         """Add arguments that this module supports."""
@@ -67,7 +145,7 @@ class Boilerplate:
             {
                 "name": "ghost",
                 "help": "Generate a ghost shell script.",
-                "args": [{"name": "--docker-image", "help": "Name of the Docker image for the ghost shell.", "required": True}]
+                "args": []
             }
         ]
 
@@ -96,7 +174,7 @@ class Boilerplate:
             if args.init_type == 'module':
                 self.init_new_module(args.name)
             elif args.init_type == 'ghost':
-                self.init_ghost_shell(args.docker_image)
+                self.init_ghost_shell()
         elif args.command == 'logs':
             self.show_logs()
         else:
@@ -169,7 +247,7 @@ class Boilerplate:
 
     def init_new_module(self, module_name):
         """Initialize a new module using the Boilerplate as a template."""
-        module_path = os.path.join(MODULES_PATH, f"{module_name}.py")
+        module_path = os.path.join(BOILERPLATE_PATH ,f"{module_name}.py")
         
         if os.path.exists(module_path):
             print(f"Module '{module_name}' already exists!")
@@ -184,26 +262,19 @@ class Boilerplate:
 
         print(f"Module '{module_name}' has been initialized!")
 
-    def init_ghost_shell(self, docker_image):
-        """Generate a ghost shell script using the provided Docker image name."""
-        shell_script_path = os.path.join(HELPERS_PATH, "ghost.app")
-        
-        with open(os.path.join(TEMPLATES_PATH, "ghost_template.j2")) as template_file:
-            template = jinja2.Template(template_file.read())
-            shell_script_content = template.render(docker_image=docker_image, commands=self.discover_commands())
+    def init_ghost_shell(self):
+        """Initialize ghost shell scripts for both bash and PowerShell."""
+        commands = self.discover_commands()
 
-        with open(shell_script_path, 'w') as shell_script_file:
-            shell_script_file.write(shell_script_content)
+        # Iterate over both shell types and generate scripts
+        for shell_type in ["bash", "powershell"]:
+            template_path = os.path.join(TEMPLATES_PATH, f"{shell_type}_template.j2")
+            with open(template_path) as template_file:
+                template = jinja2.Template(template_file.read())
+                shell_script_content = template.render(commands=commands)
 
-        print(f"Ghost shell script has been generated in the '{HELPERS_PATH}' directory!")
+            shell_script_path = os.path.join(RUNTIME_PATH, f"{shell_type if shell_type == 'powershell' else 'sh'}")
+            with open(shell_script_path, "w") as shell_script_file:
+                shell_script_file.write(shell_script_content)
 
-    def discover_commands(self):
-        """Discover all available command modules in the MODULES_PATH."""
-        commands = []
-        for file in os.listdir(MODULES_PATH):
-            if file.endswith('.py') and file != '__init__.py':
-                commands.append(file[:-3])
-        return commands
-
-# Note: This is a representation of the code with the desired changes.
-# Actual file changes should be made in the project directory.
+            print(f"Generated script for {shell_type} at {shell_script_path}")
