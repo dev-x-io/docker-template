@@ -106,15 +106,11 @@ def main():
         return
 
     # ------------------ Execute the Appropriate Module ------------------
-    if ARGS.common_module == None or (len(sys.argv) == 0 and not ARGS.debug):
+    if ARGS.common_module == None:
         parser.print_help()
     elif ARGS.common_module in module_instances:
-        if len(sys.argv) > 2 and sys.argv[2] in module_instances[ARGS.common_module].module_subcommands:
-            parser.parse_args([ARGS.common_module, sys.argv[2], '-h'])
-            return
-        else:
-            print_colored(f"Module instances before execution: {module_instances}")
-            module_instances[ARGS.common_module].execute(ARGS)
+        print_colored(f"Module instances before execution: {module_instances}")
+        module_instances[ARGS.common_module].execute(ARGS)
     else:
         print_colored(f"Unknown common module: {ARGS.common_module}")
 

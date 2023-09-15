@@ -1,17 +1,26 @@
 #!/bin/bash
-ABSOLUTE_PATH="$(pwd)"
-SETUP_FILE="$ABSOLUTE_PATH/devxio/sh"
+export ABSOLUTE_PATH="$(pwd)"
+export DEVXIO_PATH="$ABSOLUTE_PATH/devxio"
+export DEVXIO_FILE="$DEVXIO_PATH/sh"
+export DYNAMIC_PATH="$ABSOLUTE_PATH/.runtime/dynamic"
+export DOCS_PATH="$ABSOLUTE_PATH/.runtime/docs"
 
 pip install -r requirements.txt
 
 make build
 
-alias container="docker run -it --rm -v $ABOLUTE_PATH/devxio/:/devxio -v $ABOLUTE_PATH/.runtime/dynamic/:/dynamic -v $ABOLUTE_PATH/.runtime/docs/:/docs docker-template:latest"
+alias container="docker run -it --rm -v $DEVXIO_PATH:/devxio -v $DYNAMIC_PATH:/dynamic -v $DOC_PATH:/docs docker-template:latest"
 
 # Start de container en voer het init ghost commando uit
-docker run -it --rm docker-template boilerplate init ghost
+docker run -it --rm -v $DEVXIO_PATH:/devxio -v $DYNAMIC_PATH:/dynamic -v $DOC_PATH:/docs docker-template boilerplate init ghost
 
-sudo chown -R $USER:$USER $SETUP_FILE
-sudo chmod +x $SETUP_FILE
-# Source de gegenereerde scripts voor deze shell
-source $SETUP_FILE
+sudo chown -R $USER:$USER $DEVXIO_PATH
+sudo chmod 755 $DEVXIO_PATH
+sudo chmod +x $DEVXIO_FILE
+
+# Schrijf de nieuwe devxio_cmd functie naar ~/.bash_aliases
+echo "# Devxio function" > ~/.bash_profile
+cat $DEVXIO_FILE >> ~/.bash_profile
+
+# Source de ~/.bash_aliases voor deze shell
+source ~/.bash_profile

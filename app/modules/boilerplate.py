@@ -5,9 +5,9 @@ from common.tools import AbstractModule, Common
 
 # Constants
 MODULES_PATH = "modules"  # Path to the modules directory
-TEMPLATES_PATH = "/templates"  # Path to the templates directory
+TEMPLATES_PATH = "templates"  # Path to the templates directory
 DYNAMIC_MODULE_PATH = "/dynamic"
-RUNTIME_PATH = "/devxio"  # Path for newly generated modules
+DEVXIO_PATH = "/devxio"  # Path for newly generated modules
 
 
 class Boilerplate(AbstractModule):
@@ -54,10 +54,12 @@ class Boilerplate(AbstractModule):
 
     def module(self):
         """Crafts a new module from the template."""
+        self.init_new_module()
         pass
 
     def ghost(self):
         """Conjures a ghost shell script."""
+        self.init_ghost_shell()
         pass
 
     # ------------------ Command and Subcommand Handling Methods ------------------
@@ -201,7 +203,7 @@ class Boilerplate(AbstractModule):
                 template = jinja2.Template(template_file.read())
                 shell_script_content = template.render(commands=commands)
 
-            shell_script_path = os.path.join(RUNTIME_PATH, f"{shell_type if shell_type == 'powershell' else 'sh'}")
+            shell_script_path = os.path.join(DEVXIO_PATH, f"{shell_type if shell_type == 'powershell' else 'sh'}")
             with open(shell_script_path, "w") as shell_script_file:
                 shell_script_file.write(shell_script_content)
 

@@ -4,13 +4,10 @@ FROM alpine:latest
 ENV APP_VERSION=v0.0.0
 
 
-VOLUME [ "/devxio", "/boilerplates", "/templates", "/docs", "/dynamic" ]
+VOLUME [ "/docs", "/dynamic", "/devxio" ]
 
 # Kopieer het Python-script (banner.py) naar de container
 COPY ./app/ /app
-
-# Kopieer de jinja templates naar de container
-COPY ./templates/ /templates
 
 # Stel een werkdirectory in
 WORKDIR /app

@@ -2,6 +2,14 @@
 
 # Generated with Dev-X-io Boilerplate
 
+export ABSOLUTE_PATH="$(pwd)"
+export DEVXIO_PATH="$ABSOLUTE_PATH/devxio"
+export DEVXIO_FILE="$DEVXIO_PATH/sh"
+export DYNAMIC_PATH="$ABSOLUTE_PATH/.runtime/dynamic"
+export DOCS_PATH="$ABSOLUTE_PATH/.runtime/docs"
+
+
+
 # Read the source containers from .devxio file line by line
 while IFS= read -r docker_image
 do
@@ -31,10 +39,4 @@ do
     }
 done < .devxio
 
-alias container="docker run -it --rm -v ./helpers/:/devxio -v /workspaces/docker-template/.runtime/boilerplates/:/boilerplates -v /workspaces/docker-template/.runtime/docs/:/docs docker-template:latest"
-
-alias devxio=devxio
-
-echo "Available commands:"
-
-echo "devxio init []"
+# Generate the devxio file
