@@ -1,121 +1,129 @@
-import argparse
 import importlib
 import inspect
 import os
 import sys
 import json
+import argparse
+from argparse import ArgumentParser
 from termcolor import colored
-from modules.banner import Banner, AbstractModule
-from modules.observer import MainObserver
-from common.tools import Common as common
-from abc import ABC
+from common import Common as common, AbstractModule
+from modules.banner.banner import Banner
 
-# Constants
-APP_VERSION = "v0.1.0"  # Default version if not set in environment variable
-STATIC_MODULES_PATH = "modules"  # Directory where all static modules reside
-DYNAMIC_MODULES_PATH = "/dynamic"  # Directory where all dynamic modules reside
-EXCLUDE_MODULES = ['tools', 'observer']  # Modules to be excluded
+# Paden naar de modules directories
+STATIC_MODULES_PATH = "modules"
+DYNAMIC_MODULES_PATH = "/dynamic"  # Pad voor nieuw gegenereerde modules
 
-# Add the current directory to the Python path
+# Modules die je wilt uitsluiten van import
+EXCLUDE_MODULES = ['tools', 'observer']
+
+APP_VERSION = os.environ.get("APP_VERSION", "v0.1.0")
+
+# Voeg het huidige scriptdirectorypad toe aan de Python-path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(DYNAMIC_MODULES_PATH)  # Add dynamic modules path to the Python path
+sys.path.append(STATIC_MODULES_PATH)  # Voeg het pad van statische modules toe aan de Python-path
+sys.path.append(DYNAMIC_MODULES_PATH)  # Voeg het pad van dynamische modules toe aan de Python-path
 
-def print_colored(text, color='green'):
-    """Helper function to print colored text."""
-    print(colored(text, color))
+# Debug helperfunctie
+def print_colored(message, color="white"):
+    print(colored(message, color))
 
-def discover_modules(path):
-    """Discover all available modules in the specified path."""
-    modules = [
-        file[:-3] for file in os.listdir(path)
-        if file.endswith('.py') and file != '__init__.py'
-    ]
-    print_colored(f"Discovered modules in {path}: {modules}", color="yellow")  # Debugging line
-    return modules
+# Ontdek beschikbare modules in de opgegeven directory
+def discover_modules(module_path):
+    try:
+        return [f[:-3] for f in os.listdir(module_path) if f.endswith('.py') and f not in EXCLUDE_MODULES]
+    except Exception as e:
+        print_colored(f"Error discovering modules in {module_path}: {e}", color="red")
+        return []
 
-def add_modules_to_parser(subparsers, module_path, abstract_module, is_static=True, module_prefix=""):
-    """Function to add modules to the argument parser."""
+def discover_and_instantiate_modules(module_path, base_class, is_static=True, module_prefix=""):
+    module_instances = {}
+    parser = argparse.ArgumentParser(description=colored('docker shell: Made user-friendly, dynamic and bonus; Ephemeral!', 'green'))
 
     for module_name in discover_modules(module_path):
         if module_name in EXCLUDE_MODULES:
             continue
 
-        print_colored(f"Attempting to import module: {module_name}", color="yellow")  # Debugging line
+        print_colored(f"Attempting to import module: {module_name}", color="yellow")
         try:
             if is_static:
                 module = importlib.import_module(f"{STATIC_MODULES_PATH}.{module_name}")
             else:
                 module = importlib.import_module(f"{module_name}")
-                print(f"Detected classes in {module_name}: {[name for name, _ in inspect.getmembers(module, inspect.isclass)]}")  # Debugging line
+                print(f"Detected classes in {module_name}: {[name for name, _ in inspect.getmembers(module, inspect.isclass)]}")
 
             for name, cls in inspect.getmembers(module, inspect.isclass):
-                if cls.__module__ == module.__name__ and issubclass(cls, abstract_module) and cls != abstract_module:
-                    print(f"Instantiating class {name} of module {module_name}...")  # Debug line
+                if cls.__module__ == module.__name__ and issubclass(cls, base_class) and cls != base_class:
+                    print(f"Instantiating class {name} of module {module_name}...")
                     instance = cls()
                     if hasattr(instance, 'add_arguments'):
-                        print(f"Calling add_arguments for class {name} of module {module_name}...")  # Debug line
+                        print(f"Calling add_arguments for class {name} of module {module_name}...")
                         
                         # Voeg een voorvoegsel toe aan de subparsers om conflicten te voorkomen
                         subparser_prefix = f"{module_prefix}_" if module_prefix else ""
-                        instance.add_arguments(subparsers, f"{subparser_prefix}{name.lower()}", cls.__doc__)
+                        instance.add_arguments(parser, f"{subparser_prefix}{name.lower()}", cls.__doc__, parser)
+                    module_instances[module_name] = instance
         except Exception as e:
-            print_colored(f"Error importing module {module_name}: {e}", color="red")  # Debugging line
+            print_colored(f"Error importing module {module_name}: {e}", color="red")
+    
+    return module_instances
+
+# Voeg modules toe aan de command-line parser
+def add_arguments(subparsers: ArgumentParser, subcommand: str, help_text: str, subparsers_variable: ArgumentParser, module_prefix=""):
+    for module_name in discover_modules(STATIC_MODULES_PATH):
+        if module_name in EXCLUDE_MODULES:
+            continue
+
+        print_colored(f"Attempting to import module: {module_name}", color="yellow")
+        try:
+            module = importlib.import_module(f"{STATIC_MODULES_PATH}.{module_name}")
+            print(f"Detected classes in {module_name}: {[name for name, _ in inspect.getmembers(module, inspect.isclass)]}")
+
+            for name, cls in inspect.getmembers(module, inspect.isclass):
+                if cls.__module__ == module.__name__ and issubclass(cls, AbstractModule) and cls != AbstractModule:
+                    print(f"Instantiating class {name} of module {module_name}...")
+                    instance = cls()
+                    if hasattr(instance, 'add_arguments'):
+                        print(f"Calling add_arguments for class {name} of module {module_name}...")
+                        
+                        # Voeg een voorvoegsel toe aan de subparsers om conflicten te voorkomen
+                        subparser_prefix = f"{module_prefix}_" if module_prefix else ""
+                        instance.add_arguments(subparsers, f"{subparser_prefix}{name.lower()}", cls.__doc__, subparsers)  # Geef subparsers als argument door
+        except Exception as e:
+            print_colored(f"Error importing module {module_name}: {e}", color="red")
 
 def main():
-    module_instances = {}  # Maak de dictionary voor module-instanties
-
+    module_instances = {}
     banner = Banner(APP_VERSION)
+    parser = argparse.ArgumentParser(description=colored('docker shell: Made user-friendly, dynamic and bonus; Ephemeral!', 'green'))
+    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
 
-    parser = argparse.ArgumentParser(
-        description=colored('docker shell: Made user-friendly, dynamic and bonus; Ephemeral!', 'green')
-    )
+    common_subparser = parser.add_subparsers(dest='common_module', help='Available common modules in app')  # pylint: disable=redundant-keyword-arg
 
-    # Voeg hier de subparser-logica toe voor de "common"-module.
-    common_subparser = parser.add_subparsers(dest='common_module', help='Available common modules in app')
-    add_modules_to_parser(common_subparser, STATIC_MODULES_PATH, AbstractModule, is_static=True)
+    # Ontdek en instantieer statische modules
+    module_instances.update(discover_and_instantiate_modules(STATIC_MODULES_PATH, AbstractModule, is_static=True, module_prefix="static"))
 
-    # Add the --report argument
-    parser.add_argument('--report', action='store_true', help='Report available commands and subcommands in JSON format.')
+    # Ontdek en instantieer dynamische modules
+    module_instances.update(discover_and_instantiate_modules(DYNAMIC_MODULES_PATH, AbstractModule, is_static=False, module_prefix="dynamic"))
 
-    # Check if no arguments were passed
+    # Voeg gemeenschappelijke modules toe aan de subparsers
+    add_arguments(common_subparser, 'common', 'Common modules', common_subparser)
+
     args = parser.parse_args()
 
-    if args.report:
-        # Generate the report in the format van het oude script
-        report = {}
-        for module_name, instance in module_instances.items():
-            if hasattr(instance, 'module_commands'):
-                report[module_name] = {
-                    'commands': instance.module_commands,
-                    'subcommands': instance.module_subcommands
-                }
-        print(json.dumps(report, indent=4))
-        return
+    if args.debug:
+        print_colored("Debug mode enabled.", color="yellow")
+        print(args)
 
-    if len(sys.argv) <= 1:
-        # Display the help message
-        parser.print_help()
-        return
-
-    # If a common module is selected, execute the corresponding function with its arguments
     if args.common_module:
-        # Hier halen we de naam van het subcommando uit de args
-        common_command = args.common_module
-        module_instances[common_command].execute(args)
-    else:
-        print(f"Unknown common module: {args.common_module}")
-        parser.print_help()
-    # if args.common_module in module_instances:
-    #     # Hier halen we de naam van het subcommando uit de args
-    #     common_command = getattr(args, 'common_command', None)
-    #     if common_command:
-    #         module_instances[args.common_module].execute(common_command, args)
-    #     else:
-    #         print(f"No subcommand structure defined for common module: {args.common_module}")
-    #         parser.print_help()
-    # else:
-    #     print(f"Unknown common module: {args.common_module}")
-    #     parser.print_help()
+        if args.common_module in module_instances:
+            module_instances[args.common_module].run(args)
+        else:
+            print_colored(f"Common module '{args.common_module}' not found.", color="red")
 
-if __name__ == "__main__":
+    if not len(sys.argv) > 1:
+        banner.print_banner()
+        parser.print_help()
+        sys.exit(0)
+
+if __name__ == '__main__':
     main()

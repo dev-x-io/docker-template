@@ -1,3 +1,4 @@
 pyfiglet
 termcolor
 jinja2
+argparse
