@@ -6,22 +6,7 @@ import pyfiglet
 import json
 from termcolor import colored
 from abc import ABC, abstractmethod  # Toegevoegd voor abstracte klasse
-
-
-class AbstractModule(ABC):
-    """
-    Abstract Module to define the structure for all modules.
-    """
-
-    @abstractmethod
-    def get_command_docs(self):
-        """Retrieve the docstrings for commands."""
-        pass
-
-    @abstractmethod
-    def get_subcommand_docs(self):
-        """Retrieve the docstrings for subcommands."""
-        pass
+from common.tools import AbstractModule, Common
 
 
 class Banner(AbstractModule):
@@ -50,9 +35,62 @@ class Banner(AbstractModule):
         self.module_version = "0.1.0"
         self.module_author = "Dev-X-io"
         self.module_license = "MIT"
-        self.module_commands = ["show", "list", "banner"]
+        self.module_commands = ["info"]
         self.module_subcommands = {}
+        self._observers = []
+        self.logs = []
 
+    def info(self):
+        """Displays the project banner."""
+        print("Displaying the Banner...")
+        self.display()
+
+    def add_arguments(self, subparsers, name, doc):
+        """Add arguments that this module supports."""
+        module_parser = subparsers.add_parser(name, help=doc.strip())
+        command_subparsers = module_parser.add_subparsers(dest='command', help=f'{name} commands')
+
+        # Voeg de Common klasse toe aan banner
+        common_instance = Common()  # Maak een instantie van de Common klasse
+        common_instance.add_arguments(module_parser, name, doc)  # Roep de add_arguments methode van Common aan
+
+        # Voeg andere argumenten voor banner toe
+        # ...
+
+        # Toevoegen van 'info' als een commando, niet als een subcommando
+        info_parser = command_subparsers.add_parser("info", help="Shows banner information.")
+        print(f"Added parser for command 'info' for module '{name}'")  # Debug line
+
+        # Log the added commands
+        log_message = f"Added command 'info' in module '{name}'."
+        self.logs.append(log_message)
+        self.notify_observers(log_message)
+
+        # Add logs command directly to the module command level
+        logs_parser = command_subparsers.add_parser("logs", help="Display logs.")
+        logs_parser.set_defaults(func=self.show_logs)
+        
+    def register_observer(self, observer):
+        """Add an observer to the list."""
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def remove_observer(self, observer):
+        """Remove an observer from the list."""
+        self._observers.remove(observer)
+
+    def notify_observers(self, message):
+        """Notify all observers of a change."""
+        for observer in self._observers:
+            observer.update(message)
+
+    def discover_commands(self):
+        commands = {}
+        for command in self.module_commands:
+            subcommands = getattr(self, f"{command}_subcommands", [])
+            commands[command] = [f'"{subcmd}"' for subcmd in subcommands]
+        return commands
+        
     def get_command_docs(self):
         """Retrieve the docstrings for commands."""
         commands_dict = {}
@@ -62,62 +100,94 @@ class Banner(AbstractModule):
                 commands_dict[command] = command_method.__doc__.strip()
         return commands_dict
 
-    def get_subcommand_docs(self):
-        """Retrieve the docstrings for subcommands."""
-        # Since Banner class does not have subcommands, we return an empty dictionary
-        return {}
-
-    @staticmethod
-    def generate_report(module_instances):
-        """Generate a JSON report of all available modules, commands, subcommands, metadata, and docstrings."""
+    def get_metadata(self, module_instances):
+        """Generate a JSON report of metadata for all available modules."""
         report = {}
         for module_name, instance in module_instances.items():
             module_data = {
-                'metadata': {
-                    'description': instance.module_description if hasattr(instance, 'module_description') else None,
-                    'version': instance.module_version if hasattr(instance, 'module_version') else None,
-                    'author': instance.module_author if hasattr(instance, 'module_author') else None,
-                    'license': instance.module_license if hasattr(instance, 'module_license') else None,
-                    'doc': instance.__doc__.strip() if instance.__doc__ else None,
-                },
-                'commands': instance.get_command_docs() if hasattr(instance, 'get_command_docs') else {},
-                'subcommands': instance.get_subcommand_docs() if hasattr(instance, 'get_subcommand_docs') else {}
+                'description': instance.module_description if hasattr(instance, 'module_description') else None,
+                'version': instance.module_version if hasattr(instance, 'module_version') else None,
+                'author': instance.module_author if hasattr(instance, 'module_author') else None,
+                'license': instance.module_license if hasattr(instance, 'module_license') else None,
+                'doc': instance.__doc__.strip() if instance.__doc__ else None
             }
             report[module_name] = module_data
         return json.dumps(report, indent=4)
 
-    def add_arguments(self, subparsers, name, doc):
-        """Add arguments for the Banner module."""
-        module_parser = subparsers.add_parser(name, help=doc.strip())
-        module_subparsers = module_parser.add_subparsers(dest='command', help=f'{name} commands')
-        module_subparsers.add_parser("show", help="Display the banner.")
-        module_subparsers.add_parser("list", help="List available subcommands.")
+
+    def get_subcommand_docs(self):
+        """Retrieve the docstrings for subcommands."""
+        subcommands_dict = {}
+        for command, subcommands in self.module_subcommands.items():
+            subcommands_dict[command] = {
+                "description": getattr(self, command).__doc__.strip() if getattr(self, command) and getattr(self, command).__doc__ else "",
+                "subcommands": {}
+            }
+            for subcommand in subcommands:
+                subcommand_method = getattr(self, subcommand, None)
+                if subcommand_method and subcommand_method.__doc__:
+                    subcommands_dict[command]["subcommands"][subcommand] = subcommand_method.__doc__.strip()
+        return subcommands_dict
 
     def execute(self, args):
-        """Execute the banner display or list subcommands."""
-        if args.command == "show":
+        """Execute the desired functionality based on user input."""
+        # Log the executed command
+        log_message = f"Executing command '{args.command}' in module '{self.module_name}'."
+        self.logs.append(log_message)
+        self.notify_observers(log_message)
+
+        if args.command == 'info':
             self.display()
-        elif args.command == "list":
-            self.list_subcommands()
+        elif args.command == 'logs':
+            self.show_logs()
         else:
             self.print_help()
 
-    def list_subcommands(self):
-        """List available subcommands."""
-        print("Available subcommands for banner:")
-        for command in self.module_commands:
-            print(f"  {command}")
+
+    def get_logs(self):
+        """Retrieve all logs."""
+        return self.logs
+
+    def show_logs(self):
+        """Display collected logs."""
+        print(colored("Collected Logs:", 'yellow'))
+        print('-' * 15)
+        for log in self.logs:
+            print(log)     
+
 
     def print_help(self):
-        """Display the help message."""
-        print(f"Available commands for {self.module_name}:")
-        for command in self.module_commands:
-            print(f"  {command}")
+        """Display the help message."""    
+        # Header
+        header = f"Available commands and subcommands for {self.module_name}:"
+        print(colored(header, 'yellow'))
+        print('-' * len(header))
+        
+        # Main commands
+        main_commands_info = [{"command": command, "description": self.get_command_docs().get(command, "")} for command in self.module_commands]
+        
+        # Display main commands
+        max_command_length = max(len(command["command"]) for command in main_commands_info)
+        
+        for command in main_commands_info:
+            print(colored(f"{command['command'].ljust(max_command_length)}", 'cyan') + f" : {command['description']}")
+        
+        # Display subcommands
         if self.module_subcommands:
-            print("\nAvailable subcommands:")
             for command, subcommands in self.module_subcommands.items():
                 for subcommand in subcommands:
-                    print(f"  {command} {subcommand}")
+                    subcommand_description = self.get_subcommand_docs().get(command, {}).get("subcommands", {}).get(subcommand, "")
+                    print(colored(f"{command} {subcommand}", 'green') + f" : {subcommand_description}")
+
+
+    def display_module_info(self, module_instances):
+        """Display detailed module commands and their docstrings."""
+        print(colored("\nAvailable Modules and Commands:\n", 'yellow'))
+        for module_name, instance in module_instances.items():
+            print(colored(f"{module_name}:", "cyan"))
+            if hasattr(instance, 'print_help'):
+                instance.print_help()
+            print()
 
     def display_system_info(self):
         """Display detailed system information."""
@@ -128,23 +198,6 @@ class Banner(AbstractModule):
         print(colored("Python Version:", self.info_color), platform.python_version())
         print(colored("Number of CPUs:", self.info_color), multiprocessing.cpu_count())
         print(colored("Modules path:", self.info_color), os.path.dirname(os.path.abspath(__file__)))
-
-    def display_module_info(self, module_instances):
-        """Display detailed module commands and their docstrings."""
-        print(colored("\nAvailable Modules and Commands:\n", 'yellow'))
-        for module_name, instance in module_instances.items():
-            print(colored(f"{module_name}:", "cyan"))
-            if hasattr(instance, 'get_commands_with_docs'):
-                commands_with_docs = instance.get_commands_with_docs()
-                for command, doc in commands_with_docs.items():
-                    print(f"  {command} - {doc}")
-
-            if hasattr(instance, 'get_subcommands_with_docs'):
-                subcommands_with_docs = instance.get_subcommands_with_docs()
-                for command, subcommands in subcommands_with_docs.items():
-                    for subcommand, subdoc in subcommands.items():
-                        print(f"  {command} {subcommand} - {subdoc}")
-            print()
 
     def display(self, module_instances=None):
         """Render the majestic banner for all to behold."""

@@ -7,27 +7,23 @@ while IFS= read -r docker_image
 do
     PREFIX=$(echo $docker_image | sed 's/docker-//; s/:.*//')
 
-    public function devxio() {
+    function devxio() {
         local command="$1"
         shift  # Shift the arguments to get subcommands and options
         local subcommand="$1"
         shift  # Shift again to get any further options
 
         case "$command" in
-        {% for cmd, subcmds in commands.items() %}
-        "{{ cmd }}")
+        
+        "init")
             case "$subcommand" in
-            {% for subcmd in subcmds %}
-            "{{ subcmd }}")
-                docker run -it --rm -v ./helpers/:/devxio -v ./.runtime/boilerplates/:/boilerplates -v ./.runtime/docs/:/docs $docker_image {{ cmd }} {{ subcmd }} "$@"
-                ;;
-            {% endfor %}
+            
             *)
-                echo "Unknown subcommand: $subcommand for command {{ cmd }}"
+                echo "Unknown subcommand: $subcommand for command init"
                 ;;
             esac
             ;;
-        {% endfor %}
+        
         *)
             echo "Unknown command: $command"
             ;;
@@ -40,6 +36,5 @@ alias container="docker run -it --rm -v ./helpers/:/devxio -v /workspaces/docker
 alias devxio=devxio
 
 echo "Available commands:"
-{% for cmd, subcmds in commands.items() %}
-echo "devxio {{ cmd }} [{{ ' '.join(subcmds) }}]"
-{% endfor %}
+
+echo "devxio init []"

@@ -1,44 +1,19 @@
 import os
 import jinja2
 from termcolor import colored
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod  # Toegevoegd voor abstracte klasse
+from common.tools import AbstractModule, Common
 
+# Constants
 MODULES_PATH = "modules"  # Path to the modules directory
 TEMPLATES_PATH = "/templates"  # Path to the templates directory
-BOILERPLATE_PATH = "/modules"
+DYNAMIC_MODULE_PATH = "/dynamic"
 RUNTIME_PATH = "/devxio"  # Path for newly generated modules
 
-class AbstractModule(ABC):
-    """
-    Abstract Module to define the structure for all modules.
-    """
 
-    @abstractmethod
-    def get_command_docs(self):
-        """Retrieve the docstrings for commands."""
-        pass
+class Boilerplate(AbstractModule):
+    """Behold, The Legendary Dev-X-io Boilerplate! ... [shortened for brevity]"""
 
-    @abstractmethod
-    def get_subcommand_docs(self):
-        """Retrieve the docstrings for subcommands."""
-        pass
-
-class Boilerplate:
-    """
-    Behold, The Legendary Dev-X-io Boilerplate!
-
-    In the boundless realm of coding, legends whisper of a template so mighty, so versatile, 
-    it can mold any idea into a masterpiece. That legend... is no myth. It's the Dev-X-io Boilerplate!
-
-    This isn't just a starting point; it's a launchpad. A canvas primed and ready for the strokes 
-    of genius. Whether you're crafting a potion or conjuring a spell, this Boilerplate is the 
-    alchemy you need.
-
-    So, intrepid developer, the stage is set, the spotlight's on. Are you ready to craft your legacy?
-    With the Dev-X-io Boilerplate, every line of code is a step towards legend. 🌟
-    """
-
-    
     def __init__(self, app_version="v0.1.0"):
         self.module_name = "boilerplate"
         self.module_description = "A foundation for all future modules."
@@ -54,84 +29,29 @@ class Boilerplate:
         self.logs = []
 
     def init(self):
-        """
-        Ignites the Boilerplate's core.
-
-        The starting beacon, calling forth the Boilerplate's might. Ready to set the stage for future endeavors.
-        """
+        """Ignites the Boilerplate's core."""
         pass
 
     def module(self):
-        """
-        Crafts a new module from the template.
-
-        This spell weaves the essence of Dev-X-io, giving birth to a new module, primed for innovation.
-        """
+        """Crafts a new module from the template."""
+        pass
 
     def ghost(self):
-        """
-        Conjures a ghost shell script.
-
-        With a dash of magic and a sprinkle of Dev-X-io spirit, this incantation manifests a ghost shell script, ready to haunt the digital realm.
-        """
-
-    def register_observer(self, observer):
-        """Add an observer to the list."""
-        if observer not in self._observers:
-            self._observers.append(observer)
-
-    def remove_observer(self, observer):
-        """Remove an observer from the list."""
-        self._observers.remove(observer)
-
-    def notify_observers(self, message):
-        """Notify all observers of a change."""
-        for observer in self._observers:
-            observer.update(message)
-
-    # def discover_commands(self):
-    #     """Discover all available command modules in the MODULES_PATH."""
-    #     commands = []
-    #     for file in os.listdir(MODULES_PATH):
-    #         if file.endswith('.py') and file != '__init__.py':
-    #             commands.append(file[:-3])
-    #     return commands
+        """Conjures a ghost shell script."""
+        pass
     
-    def discover_commands(self):
-        commands = {}
-        for command in self.module_commands:
-            subcommands = getattr(self, f"{command}_subcommands", [])
-            commands[command] = [f'"{subcmd}"' for subcmd in subcommands]
-        return commands
-
-
-    def get_command_docs(self):
-        """Retrieve the docstrings for commands."""
-        commands_dict = {}
-        for command in self.module_commands:
-            command_method = getattr(self, command, None)
-            if command_method and command_method.__doc__:
-                commands_dict[command] = command_method.__doc__.strip()
-        return commands_dict
-
-    def get_subcommand_docs(self):
-        """Retrieve the docstrings for subcommands."""
-        subcommands_dict = {}
-        for command, subcommands in self.module_subcommands.items():
-            subcommands_dict[command] = {
-                "description": getattr(self, command).__doc__.strip() if getattr(self, command) and getattr(self, command).__doc__ else "",
-                "subcommands": {}
-            }
-            for subcommand in subcommands:
-                subcommand_method = getattr(self, subcommand, None)
-                if subcommand_method and subcommand_method.__doc__:
-                    subcommands_dict[command]["subcommands"][subcommand] = subcommand_method.__doc__.strip()
-        return subcommands_dict
 
     def add_arguments(self, subparsers, name, doc):
         """Add arguments that this module supports."""
         module_parser = subparsers.add_parser(name, help=doc.strip())
         command_subparsers = module_parser.add_subparsers(dest='command', help=f'{name} commands')
+
+        # Voeg de Common klasse toe aan boilerplate
+        common_instance = Common()  # Maak een instantie van de Common klasse
+        common_instance.add_arguments(module_parser, name, doc)  # Roep de add_arguments methode van Common aan
+
+        # Voeg andere argumenten voor boilerplate toe
+        # ...
 
         init_parser = command_subparsers.add_parser("init", help="Initialize components.")
         init_subparsers = init_parser.add_subparsers(dest='init_type', help='init subcommands')
@@ -155,13 +75,67 @@ class Boilerplate:
                 parser.add_argument(arg["name"], help=arg["help"], required=arg["required"])
 
             # Log the added subcommands
-            log_message = f"Added subcommand '{subcommand['name']}' with arguments {[arg['name'] for arg in subcommand['args']]} in module '{self.module_name}'."
+            log_message = f"Added subcommand '{subcommand['name']}' with arguments {[arg['name'] for arg in subcommand['args']]} in module '{name}'."
             self.logs.append(log_message)
             self.notify_observers(log_message)
 
         # Add logs command directly to the module command level
         logs_parser = command_subparsers.add_parser("logs", help="Display logs.")
         logs_parser.set_defaults(func=self.show_logs)
+        
+    def register_observer(self, observer):
+        """Add an observer to the list."""
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def remove_observer(self, observer):
+        """Remove an observer from the list."""
+        self._observers.remove(observer)
+
+    def notify_observers(self, message):
+        """Notify all observers of a change."""
+        for observer in self._observers:
+            observer.update(message)
+    
+    def discover_commands(self):
+        commands = {}
+        for command in self.module_commands:
+            subcommands = getattr(self, f"{command}_subcommands", [])
+            commands[command] = [f'"{subcmd}"' for subcmd in subcommands]
+        return commands
+
+    def get_metadata(self):
+        """Retrieve the metadata for the module."""
+        return {
+            'description': self.module_description,
+            'version': self.module_version,
+            'author': self.module_author,
+            'license': self.module_license,
+            'doc': self.__doc__.strip() if self.__doc__ else None
+        }
+
+    def get_command_docs(self):
+        """Retrieve the docstrings for commands."""
+        commands_dict = {}
+        for command in self.module_commands:
+            command_method = getattr(self, command, None)
+            if command_method and command_method.__doc__:
+                commands_dict[command] = command_method.__doc__.strip()
+        return commands_dict
+
+    def get_subcommand_docs(self):
+        """Retrieve the docstrings for subcommands."""
+        subcommands_dict = {}
+        for command, subcommands in self.module_subcommands.items():
+            subcommands_dict[command] = {
+                "description": getattr(self, command).__doc__.strip() if getattr(self, command) and getattr(self, command).__doc__ else "",
+                "subcommands": {}
+            }
+            for subcommand in subcommands:
+                subcommand_method = getattr(self, subcommand, None)
+                if subcommand_method and subcommand_method.__doc__:
+                    subcommands_dict[command]["subcommands"][subcommand] = subcommand_method.__doc__.strip()
+        return subcommands_dict
 
     def execute(self, args):
         """Execute the desired functionality based on user input."""
@@ -195,59 +169,28 @@ class Boilerplate:
     def print_help(self):
         """Improved custom help function."""    
         # Header
-        header = "Available commands and subcommands for boilerplate:"
+        header = f"Available commands and subcommands for {self.module_name}:"
         print(colored(header, 'yellow'))
         print('-' * len(header))
         
         # Main commands
-        main_commands_info = [
-            {
-                "command": "init",
-                "arguments": "",
-                "description": "Initialize components."
-            },
-            {
-                "command": "logs",
-                "arguments": "",
-                "description": "Display logs."
-            }
-        ]
-        
-        # Display main commands
-        max_command_length = max(len(command["command"]) for command in main_commands_info)
-        max_arguments_length = max(len(command["arguments"]) for command in main_commands_info)
-        
-        for command in main_commands_info:
-            print(colored(f"{command['command'].ljust(max_command_length)}", 'cyan') +
-                  f" {command['arguments'].ljust(max_arguments_length)} : {command['description']}")
+        max_command_length = max(len(command) for command in self.module_commands)
+        for command in self.module_commands:
+            description = getattr(self, command).__doc__.strip() if getattr(self, command) and getattr(self, command).__doc__ else ""
+            print(colored(f"{command.ljust(max_command_length)}", 'cyan') + f" : {description}")
 
-        print("\nSubcommands for 'init':")
-        
-        # Subcommands for 'init'
-        subcommands_info = [
-            {
-                "command": "module",
-                "arguments": "--name [module_name]",
-                "description": "Initialize a new module."
-            },
-            {
-                "command": "ghost",
-                "arguments": "--docker-image [image_name]",
-                "description": "Generate a ghost shell script."
-            }
-        ]
-
-        # Display subcommands
-        max_command_length = max(len(subcommand["command"]) for subcommand in subcommands_info)
-        max_arguments_length = max(len(subcommand["arguments"]) for subcommand in subcommands_info)
-        
-        for subcommand in subcommands_info:
-            print(colored(f"{subcommand['command'].ljust(max_command_length)}", 'green') +
-                  f" {subcommand['arguments'].ljust(max_arguments_length)} : {subcommand['description']}")
+        # Subcommands
+        for command, subcommands in self.module_subcommands.items():
+            print(f"\nSubcommands for '{command}':")
+            
+            max_subcommand_length = max(len(subcommand) for subcommand in subcommands)
+            for subcommand in subcommands:
+                description = getattr(self, subcommand).__doc__.strip() if getattr(self, subcommand) and getattr(self, subcommand).__doc__ else ""
+                print(colored(f"{subcommand.ljust(max_subcommand_length)}", 'green') + f" : {description}")
 
     def init_new_module(self, module_name):
         """Initialize a new module using the Boilerplate as a template."""
-        module_path = os.path.join(BOILERPLATE_PATH ,f"{module_name}.py")
+        module_path = os.path.join(DYNAMIC_MODULE_PATH ,f"{module_name}.py")
         
         if os.path.exists(module_path):
             print(f"Module '{module_name}' already exists!")

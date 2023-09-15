@@ -9,7 +9,7 @@ RUNTIME_PATH = $(PWD)/.runtime
 build:
 	@docker build -f Dockerfile -t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG) .
 	@echo "Docker image $(DOCKER_IMAGE_NAME):$(DOCKER_TAG) is built."
-	echo
+	@echo "---------------------------------------------------------"
 	@echo "Available alias for this container: 'çontainer'"
 
 ## run: Draait de Docker container.
