@@ -1,7 +1,6 @@
-# Proposed observer.py module
-
 from abc import ABC, abstractmethod
 
+# ------------------ Observer Interface ------------------
 
 class ObserverInterface(ABC):
     """
@@ -15,6 +14,8 @@ class ObserverInterface(ABC):
         """
         pass
 
+
+# ------------------ Concrete Observers ------------------
 
 class MainObserver(ObserverInterface):
     """
@@ -32,7 +33,6 @@ class MainObserver(ObserverInterface):
     So, dear developer, rest easy knowing the Observers have your back. With them on your side,
     every event is a note, and every reaction, a melody. 🎵
     """
-
 
     def __init__(self):
         self.logs = []
@@ -52,7 +52,10 @@ class MainObserver(ObserverInterface):
             print(log)
 
 
-# # Demonstrating the MainObserver
+# ------------------ Demonstration (Optional) ------------------
+
+# Uncomment the lines below if you want to demonstrate the MainObserver's functionality directly.
+
 # observer_demo = MainObserver()
 # observer_demo.update("Module 'boilerplate' has been initialized.")
 # observer_demo.update("Ghost shell script has been generated.")
