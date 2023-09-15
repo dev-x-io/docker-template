@@ -75,7 +75,7 @@ def main():
 
     # ------------------ Setup Argument Parser ------------------
     parser = argparse.ArgumentParser(
-        description=colored('docker shell: Made user-friendly, dynamic and bonus; Ephemeral!', 'green')
+        description=colored('devxio cli: Made user-friendly, dynamic and bonus; Ephemeral!', 'green')
     )
 
     # ------------------ Add Arguments ------------------
@@ -84,6 +84,12 @@ def main():
 
     # ------------------ Discover Modules ----------------------
     common_subparser = parser.add_subparsers(dest='common_module', help='Available common modules in app')
+
+    # Voeg een nieuwe subparser toe voor het geval er geen subcommando is opgegeven
+    no_subcommand_parser = common_subparser.add_parser('', help=argparse.SUPPRESS)
+
+    # Verwijder de oorspronkelijke subparser door de help-tekst op te geven als argparse.SUPPRESS
+    common_subparser.choices.clear()
 
     # ------------------ Parse Arguments -----------------------
     global ARGS
@@ -105,12 +111,14 @@ def main():
         return
 
     # ------------------ Display Help if No Arguments ------------------
-    if len(sys.argv) < 1:
+    if len(sys.argv) == 1:
         parser.print_help()
         return
-
+    print("##################################")
+    print(ARGS.common_module)
+    print("##################################")
     # ------------------ Execute the Appropriate Module ------------------
-    if hasattr(ARGS, 'common_module') and ARGS.common_module:
+    if ARGS.common_module == None or (len(sys.argv) == 0 and not ARGS.debug):
         common_command = ARGS.common_module
         print_colored(f"Module instances before execution: {module_instances}")
         module_instances[common_command].execute(ARGS)
