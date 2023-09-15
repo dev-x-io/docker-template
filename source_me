@@ -1,13 +1,17 @@
 #!/bin/bash
-SETUP_FILE="/helpers/bash.devxio"
-ABSOLUTE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"   
+SETUP_FILE="/helpers/sh"
+ABSOLUTE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+
+pip install -r requirements.txt
+
 make build
+
+alias container="docker run -it --rm -v $ABOLUTE_PATH/helpers/:/devxio -v $ABOLUTE_PATH/.runtime/modules/:/modules -v $ABOLUTE_PATH/.runtime/docs/:/docs docker-template:latest"
 
 # Start de container en voer het init ghost commando uit
 docker run -it --rm docker-template boilerplate init ghost
 
-# (Optioneel) Haal de gegenereerde scripts op indien nodig
-sudo chmod +x $(pwd)/$SETUP_FILE
-
 # Source de gegenereerde scripts voor deze shell
-source "$(pwd)/$SETUP_FILE"
+source "$ABOLUTE_PATH/$SETUP_FILE"
+
+docker run -it --rm docker-template
