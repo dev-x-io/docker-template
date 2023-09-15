@@ -106,24 +106,18 @@ def main():
         return
 
     # ------------------ Execute the Appropriate Module ------------------
-    # if ARGS.common_module == None or (len(sys.argv) == 0 and not ARGS.debug):
-    #     common_command = ARGS.common_module
-    #     debug_print(f"Module instances before execution: {module_instances}")
-    #     if common_command in module_instances:
-    #         module_instances[common_command].execute(ARGS)
-    #     else:
-    #         print("No valid command provided.")
-    # else:
-    #     print_colored(f"Unknown common module: {ARGS.common_module}")
-    #     parser.print_help()
-    if ARGS.common_module in module_instances:
-        # Print help for the specific module if no subcommand is provided
-        if hasattr(ARGS, 'command') and not ARGS.command:
-            parser.parse_args([ARGS.common_module, ARGS.subcommand, '-h'])
+    if ARGS.common_module == None or (len(sys.argv) == 0 and not ARGS.debug):
+        parser.print_help()
+    elif ARGS.common_module in module_instances:
+        if len(sys.argv) > 2 and sys.argv[2] in module_instances[ARGS.common_module].module_subcommands:
+            parser.parse_args([ARGS.common_module, sys.argv[2], '-h'])
+            return
         else:
-            parser.parse_args([ARGS.common_module, '-h'])
+            print_colored(f"Module instances before execution: {module_instances}")
+            module_instances[ARGS.common_module].execute(ARGS)
     else:
         print_colored(f"Unknown common module: {ARGS.common_module}")
+
 
 
 if __name__ == "__main__":
